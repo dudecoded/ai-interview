@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import workspaceIllustration from '../../assets/Neon AI Assistant Workspace.png'
 import workspaceBackground from '../../assets/Neon Holographic Workspace Dashboard.png'
 
@@ -188,6 +188,7 @@ function SocialLogin() {
 
 function AuthCard({ mode }) {
   const isSignup = mode === 'signup'
+  const navigate = useNavigate()
   const [values, setValues] = useState({ name: '', email: '', password: '', confirmPassword: '' })
   const [visible, setVisible] = useState({ password: false, confirmPassword: false })
   const [rememberMe, setRememberMe] = useState(true)
@@ -213,7 +214,7 @@ function AuthCard({ mode }) {
       setMessage('Your passwords do not match.')
       return
     }
-    setMessage('Authentication is not connected yet.')
+    navigate('/dashboard', { replace: true })
   }
 
   return (
@@ -291,6 +292,9 @@ function AuthCard({ mode }) {
           {isSignup ? 'Already have an account?' : "Don't have an account?"}
           <Link to={isSignup ? '/login' : '/signup'}>{isSignup ? 'Sign In' : 'Sign Up'}</Link>
         </p>
+        <Link className="auth-preview-link" to="/dashboard">
+          Explore Dashboard <span aria-hidden="true">→</span>
+        </Link>
       </div>
     </section>
   )
