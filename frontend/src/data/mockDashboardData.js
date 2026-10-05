@@ -13,11 +13,29 @@ const mockDashboardData = {
     { id: 'practice-time', icon: 'clock', value: '6.5 Hours', label: 'Practice Time', trend: '↑ +1.2h' },
     { id: 'improvement', icon: 'trend', value: '+18%', label: 'Improvement', trend: '' },
   ],
-  resume: {
-    fileName: 'Ashutosh_Resume.pdf',
-    status: 'Selected for this demo',
-    uploadTitle: 'Upload your resume',
-    formatDescription: 'PDF format supported',
+  interviewConfiguration: {
+    selectedResume: null,
+    targetRole: 'Frontend Developer',
+    experienceLevel: 'Beginner',
+    duration: '30 Minutes',
+    difficulty: 'Medium',
+    options: {
+      targetRoles: ['Frontend Developer', 'Backend Developer', 'Full Stack Developer', 'Software Engineer', 'Other'],
+      experienceLevels: ['Beginner', 'Intermediate', 'Advanced'],
+      durations: ['15 Minutes', '30 Minutes', '45 Minutes'],
+      difficulties: ['Easy', 'Medium', 'Hard'],
+    },
+    fields: {
+      targetRole: { label: 'Target Role', placeholder: 'Select a target role' },
+      experienceLevel: { label: 'Experience Level', placeholder: 'Select an experience level' },
+      duration: { label: 'Interview Duration', placeholder: 'Select a duration' },
+      difficulty: { label: 'Interview Difficulty', placeholder: 'Select a difficulty' },
+    },
+    uploadStatus: {
+      replace: 'Replace Resume',
+      upload: 'Upload Resume',
+      formatDescription: 'PDF format supported',
+    },
   },
   performance: {
     chart: {

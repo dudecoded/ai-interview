@@ -41,10 +41,17 @@ function SectionTitle({ children }) {
 function DashboardView({ dashboardData }) {
   const navigate = useNavigate()
   const { user, logout: clearAuth } = useAuth()
-  const { profile, statistics, resume, performance, recentInterviews, notifications, features, navigation, copy } = dashboardData
+  const { profile, statistics, interviewConfiguration, performance, recentInterviews, notifications, features, navigation, copy } = dashboardData
   const name = user?.name || profile.name
-  const [resumeName, setResumeName] = useState(resume.fileName)
-  const [resumeMessage, setResumeMessage] = useState(resumeName ? resume.status : '')
+  const [configuration, setConfiguration] = useState(() => ({
+    selectedResume: interviewConfiguration.selectedResume,
+    targetRole: interviewConfiguration.targetRole,
+    experienceLevel: interviewConfiguration.experienceLevel,
+    duration: interviewConfiguration.duration,
+    difficulty: interviewConfiguration.difficulty,
+  }))
+  const [resumeMessage, setResumeMessage] = useState(interviewConfiguration.selectedResume?.status || '')
+  const [configurationError, setConfigurationError] = useState('')
   const [search, setSearch] = useState('')
   const [activeSection, setActiveSection] = useState('dashboard')
   const [notificationsOpen, setNotificationsOpen] = useState(false)
@@ -79,21 +86,31 @@ function DashboardView({ dashboardData }) {
       event.currentTarget.value = ''
       return
     }
-    setResumeName(file.name)
+    setConfiguration((current) => ({ ...current, selectedResume: { fileName: file.name, status: copy.localResumeSelection, file } }))
     setResumeMessage(copy.localResumeSelection)
+    setConfigurationError('')
     event.currentTarget.value = ''
   }
 
   function removeResume() {
-    setResumeName('')
+    setConfiguration((current) => ({ ...current, selectedResume: null }))
     setResumeMessage('')
+    setConfigurationError('')
   }
 
-  function startResumeInterview() {
-    if (!resumeName) return
-    setDialog({
-      title: 'Resume-based interview preview',
-      message: `${resumeName} is selected. ${copy.interviewUnavailable}`,
+  function updateInterviewConfiguration(field, value) {
+    setConfiguration((current) => ({ ...current, [field]: value }))
+    setConfigurationError('')
+  }
+
+  function startResumeInterview(event) {
+    event.preventDefault()
+    if (!configuration.selectedResume || !configuration.targetRole || !configuration.experienceLevel || !configuration.duration || !configuration.difficulty) {
+      setConfigurationError('Upload a resume and complete every interview field before continuing.')
+      return
+    }
+    navigate('/interview', {
+      state: { interviewConfiguration: configuration },
     })
   }
 
@@ -153,31 +170,51 @@ function DashboardView({ dashboardData }) {
 
         <section className="dash-resume-interview-card" id="practice">
           <div className="dash-resume-interview-copy">
-            <span className="dash-eyebrow">Resume-Based AI Interview</span>
             <h2>Start Your AI Interview</h2>
-            <p>Upload your resume and practice with an AI interviewer tailored to your experience.</p>
-            <div className="dash-interview-assurance"><Icon name="spark" size={17} /><span>Personalized questions based on your experience</span></div>
+            <p>Upload your resume and customize your AI interview before you begin.</p>
           </div>
-          <div className="dash-resume-workspace" id="resume">
-            <div className={`dash-upload-zone${resumeName ? ' has-resume' : ''}`}>
+          <form className="dash-resume-workspace" id="resume" onSubmit={startResumeInterview}>
+            <div className={`dash-upload-zone${configuration.selectedResume ? ' has-resume' : ''}`}>
               <span className="dash-upload-symbol"><Icon name="upload" size={22} /></span>
               <div className="dash-upload-copy">
-                <strong>{resumeName ? 'Resume ready for your interview' : resume.uploadTitle}</strong>
-                <span>{resumeName ? resumeMessage : resume.formatDescription}</span>
+                <strong>{configuration.selectedResume?.fileName || interviewConfiguration.uploadStatus.upload}</strong>
+                <span>{configuration.selectedResume ? resumeMessage : interviewConfiguration.uploadStatus.formatDescription}</span>
               </div>
               <input ref={fileInput} className="dash-file-input" type="file" accept="application/pdf,.pdf" onChange={handleResumeSelection} />
               <button className="dash-secondary-button dash-upload-button" type="button" onClick={() => fileInput.current?.click()}>
-                {resumeName ? 'Replace' : 'Choose PDF'}
+                {configuration.selectedResume ? interviewConfiguration.uploadStatus.replace : interviewConfiguration.uploadStatus.upload}
               </button>
-              {resumeName && <button className="dash-remove-resume" type="button" onClick={removeResume}>Remove</button>}
-              <span className="dash-selected-file" title={resumeName || undefined}>{resumeName || resume.formatDescription}</span>
+              {configuration.selectedResume && <button className="dash-remove-resume" type="button" onClick={removeResume}>Remove</button>}
             </div>
             {resumeMessage === copy.invalidResumeType && <p className="dash-resume-error" role="alert">{resumeMessage}</p>}
-            <button className="dash-primary-button dash-resume-start" type="button" disabled={!resumeName} onClick={startResumeInterview}>
-              Start Resume-Based Interview <span>→</span>
-            </button>
-            <small className="dash-local-note">Demo preview · Resume stays in this browser and is not uploaded to a server.</small>
-          </div>
+            <div className="dash-interview-fields">
+              {[
+                ['targetRole', interviewConfiguration.fields.targetRole, interviewConfiguration.options.targetRoles],
+                ['experienceLevel', interviewConfiguration.fields.experienceLevel, interviewConfiguration.options.experienceLevels],
+                ['duration', interviewConfiguration.fields.duration, interviewConfiguration.options.durations],
+                ['difficulty', interviewConfiguration.fields.difficulty, interviewConfiguration.options.difficulties],
+              ].map(([field, metadata, options]) => (
+                <label className="dash-interview-field" key={field}>
+                  <span>{metadata.label}</span>
+                  <select
+                    required
+                    value={configuration[field]}
+                    onChange={(event) => updateInterviewConfiguration(field, event.currentTarget.value)}
+                  >
+                    <option value="">{metadata.placeholder}</option>
+                    {options.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </label>
+              ))}
+            </div>
+            {configurationError && <p className="dash-resume-error" role="alert">{configurationError}</p>}
+            <div className="dash-resume-actions">
+              <small className="dash-local-note">Demo preview · Resume stays in this browser and is not uploaded to a server.</small>
+              <button className="dash-primary-button dash-resume-start" type="submit" disabled={!configuration.selectedResume}>
+                Start Resume-Based Interview <span>→</span>
+              </button>
+            </div>
+          </form>
           <div className="dash-resume-orbit" aria-hidden="true">
             <span className="dash-orbit dash-orbit-one" /><span className="dash-orbit dash-orbit-two" /><span className="dash-orbit dash-orbit-three" />
             <span className="dash-orbit-dot dash-dot-one" /><span className="dash-orbit-dot dash-dot-two" />
