@@ -3,6 +3,7 @@ import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import InterviewScreen from './pages/InterviewScreen.jsx'
+import InterviewReport from './pages/InterviewReport.jsx'
 import useAuth from './auth/useAuth.js'
 
 const DASHBOARD_PREVIEW_ENABLED = import.meta.env.DEV
@@ -21,6 +22,13 @@ function InterviewRoute() {
     : <Navigate to="/login" replace />
 }
 
+function InterviewReportRoute() {
+  const { isAuthenticated } = useAuth()
+  return isAuthenticated || DASHBOARD_PREVIEW_ENABLED
+    ? <InterviewReport />
+    : <Navigate to="/login" replace />
+}
+
 function App() {
   return (
     <Routes>
@@ -29,6 +37,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/dashboard" element={<DashboardRoute />} />
       <Route path="/interview" element={<InterviewRoute />} />
+      <Route path="/interview/report" element={<InterviewReportRoute />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   )
