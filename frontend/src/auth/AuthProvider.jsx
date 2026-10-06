@@ -1,28 +1,63 @@
 import { useEffect, useState } from 'react'
 import AuthContext from './AuthContext.js'
+import { login as apiLogin, register as apiRegister } from '../services/authService.js'
 
-const NAME_KEY = 'interviewai.demoName'
-const LEGACY_DEMO_SESSION_KEY = 'interviewai.demoSession'
+const TOKEN_KEY = 'interviewai.accessToken'
+const USER_KEY = 'interviewai.user'
 
 export default function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem(USER_KEY)
+    return savedUser ? JSON.parse(savedUser) : null
+  })
 
   useEffect(() => {
-    sessionStorage.removeItem(LEGACY_DEMO_SESSION_KEY)
+    const savedToken = localStorage.getItem(TOKEN_KEY)
+
+    if (!savedToken) {
+      setUser(null)
+    }
   }, [])
 
-  function updateName(name) {
-    sessionStorage.setItem(NAME_KEY, name)
-    setUser((currentUser) => currentUser ? { ...currentUser, name } : currentUser)
+  async function login(email, password) {
+    const data = await apiLogin(email, password)
+
+    const userData = {
+      id: data.user_id,
+      name: data.name,
+      email: data.email,
+    }
+
+    localStorage.setItem(TOKEN_KEY, data.access_token)
+    localStorage.setItem(USER_KEY, JSON.stringify(userData))
+
+    setUser(userData)
+
+    return data
+  }
+
+  async function register(name, email, password) {
+    const data = await apiRegister(name, email, password)
+
+    return data
   }
 
   function logout() {
-    sessionStorage.removeItem(NAME_KEY)
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(USER_KEY)
     setUser(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: Boolean(user), updateName, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: Boolean(user),
+        login,
+        register,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )
