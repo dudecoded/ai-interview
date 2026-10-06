@@ -1,9 +1,21 @@
-node_modules/
+# Virtual environment
+venv/
+.venv/
+
+# Environment variables
 .env
-.env.local
-dist/
-build/
-.next/
-.vite/
-*.log
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Database
+*.db
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
 .DS_Store
+Thumbs.db
