@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+python-multipart
+pypdf
+python-docx
+pwdlib
+PyJWT
+python-dotenv
+google-genai
+pydantic
