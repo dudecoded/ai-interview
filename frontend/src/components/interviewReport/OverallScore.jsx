@@ -4,7 +4,7 @@ export default function OverallScore({ score, interpretation, improvement, avera
       <div className="report-score-ring" style={{ '--score': `${score}%` }}>
         <div className="report-score-ring-inner">
           <strong>{score}</strong>
-          <span>/ 100</span>
+          <span>/ 50</span>
           <small>Overall Score</small>
         </div>
       </div>
