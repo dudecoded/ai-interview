@@ -9,3 +9,4 @@ PyJWT
 python-dotenv
 google-genai
 pydantic
+argon2-cffi
