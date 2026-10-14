@@ -1,5 +1,7 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
+
+from pydantic import BaseModel, Field
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -16,13 +18,42 @@ from ..services.ai_service import (
 
 router = APIRouter(prefix="/interview", tags=["Interview"])
 
+class InterviewStartRequest(BaseModel):
+    resume_id: int | None = None
+    target_role: str = Field(default="Software Developer", min_length=1, max_length=100)
+    experience_level: str = "Beginner"
+    difficulty: str = "Medium"
+    duration_minutes: int = Field(default=30, ge=1, le=180)
+
+
+VALID_EXPERIENCE_LEVELS = {"Beginner", "Intermediate", "Advanced"}
+VALID_DIFFICULTIES = {"Easy", "Medium", "Hard"}
 
 @router.post("/start")
 def start_interview(
-    resume_id: int | None = None,
+    request: InterviewStartRequest,
     current_user_id: int = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    # Validate configuration
+    if not request.target_role.strip():
+        raise HTTPException(
+            status_code=422,
+            detail="Target role cannot be empty",
+        )
+
+    if request.experience_level not in VALID_EXPERIENCE_LEVELS:
+        raise HTTPException(
+            status_code=422,
+            detail="Experience level must be Beginner, Intermediate, or Advanced",
+        )
+
+    if request.difficulty not in VALID_DIFFICULTIES:
+        raise HTTPException(
+            status_code=422,
+            detail="Difficulty must be Easy, Medium, or Hard",
+        )
+
     user = db.query(User).filter(
         User.id == current_user_id
     ).first()
@@ -35,9 +66,9 @@ def start_interview(
 
     skills = []
 
-    if resume_id:
+    if request.resume_id:
         resume = db.query(Resume).filter(
-            Resume.id == resume_id,
+            Resume.id == request.resume_id,
             Resume.user_id == current_user_id,
         ).first()
 
@@ -49,12 +80,17 @@ def start_interview(
 
         try:
             skills = json.loads(resume.skills or "[]")
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, TypeError):
             skills = []
 
+    # Save the selected interview configuration
     interview = Interview(
         user_id=current_user_id,
-        resume_id=resume_id,
+        resume_id=request.resume_id,
+        target_role=request.target_role.strip(),
+        experience_level=request.experience_level,
+        difficulty=request.difficulty,
+        duration_minutes=request.duration_minutes,
         status="started",
     )
 
@@ -62,18 +98,34 @@ def start_interview(
     db.commit()
     db.refresh(interview)
 
-    question = generate_question(
-        skills=skills,
-        question_number=1,
-    )
+    try:
+        question = generate_question(
+            skills=skills,
+            question_number=1,
+            role=interview.target_role,
+            experience_level=interview.experience_level,
+            difficulty=interview.difficulty,
+            duration_minutes=interview.duration_minutes,
+        )
+    except Exception:
+        db.delete(interview)
+        db.commit()
+        raise HTTPException(
+            status_code=502,
+            detail="Could not generate the first interview question",
+        )
 
     return {
         "interview_id": interview.id,
         "status": interview.status,
         "question_number": 1,
         "question": question,
+        "target_role": interview.target_role,
+        "experience_level": interview.experience_level,
+        "difficulty": interview.difficulty,
+        "duration_minutes": interview.duration_minutes,
+        "started_at": interview.started_at.isoformat(),
     }
-
 
 @router.post("/answer")
 def submit_answer(
@@ -99,6 +151,18 @@ def submit_answer(
             status_code=400,
             detail="Interview is not active",
         )
+
+    # Enforce the configured interview time limit.
+    if interview.started_at:
+        deadline = interview.started_at + timedelta(
+            minutes=interview.duration_minutes
+        )
+
+        if datetime.utcnow() >= deadline:
+            raise HTTPException(
+                status_code=400,
+                detail="Interview time has expired. Please finish the interview.",
+            )
 
     if not question.strip():
         raise HTTPException(
@@ -145,12 +209,9 @@ def submit_answer(
 
         if resume:
             try:
-                skills = json.loads(
-                    resume.skills or "[]"
-                )
-            except json.JSONDecodeError:
+                skills = json.loads(resume.skills or "[]")
+            except (json.JSONDecodeError, TypeError):
                 skills = []
-
     next_question = None
 
     if answer_count < 5:
@@ -159,6 +220,10 @@ def submit_answer(
             answer=answer_text,
             skills=skills,
             question_number=next_question_number,
+            role=interview.target_role,
+            experience_level=interview.experience_level,
+            difficulty=interview.difficulty,
+            duration_minutes=interview.duration_minutes,
         )
 
     return {
@@ -212,18 +277,46 @@ def finish_interview(
     ).order_by(
         Answer.id.asc()
     ).all()
+    if not answers:
+        interview.status = "completed"
+    interview.ended_at = datetime.utcnow()
 
-    # Exactly five questions are required.
-    if len(answers) < 5:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"Interview cannot be finished yet. "
-                f"Only {len(answers)} of 5 answers "
-                f"were submitted."
-            ),
+    if interview.started_at:
+        interview.duration = int(
+            (interview.ended_at - interview.started_at).total_seconds()
         )
 
+    result = Result(
+        interview_id=interview.id,
+        overall_score=0,
+        technical_score=0,
+        communication_score=0,
+        problem_solving_score=0,
+        confidence_score=0,
+        strengths=json.dumps([]),
+        improvements=json.dumps(["No answers were submitted."]),
+        suggestions=json.dumps(
+            ["Attempt the interview questions to receive meaningful feedback."]
+        ),
+    )
+
+    db.add(result)
+    db.commit()
+
+    return {
+        "message": "Interview completed with no answers",
+        "interview_id": interview.id,
+        "answers_submitted": 0,
+        "overall_score": 0,
+        "maximum_score": 50,
+        "result": {
+            "technical_score": 0,
+            "communication_score": 0,
+            "strengths": [],
+            "weaknesses": ["No answers were submitted."],
+            "topics_to_improve": [],
+        },
+    }
     # --------------------------------------------------
     # CALCULATE OVERALL SCORE OUT OF 50
     # --------------------------------------------------
@@ -232,10 +325,7 @@ def finish_interview(
         for answer in answers[:5]
     )
 
-    total_score = round(
-        min(total_score, 50),
-        1,
-    )
+    total_score = round(min(total_score, 50), 1)
 
     interview_results = []
 

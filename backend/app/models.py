@@ -44,6 +44,13 @@ class Interview(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     resume_id = Column(Integer, ForeignKey("resumes.id"), nullable=True)
 
+    # Interview configuration
+    target_role = Column(String, default="Software Developer", nullable=False)
+    experience_level = Column(String, default="Beginner", nullable=False)
+    difficulty = Column(String, default="Medium", nullable=False)
+    duration_minutes = Column(Integer, default=30, nullable=False)
+
+    # Interview state
     status = Column(String, default="started")
     started_at = Column(DateTime, default=datetime.utcnow)
     ended_at = Column(DateTime, nullable=True)
