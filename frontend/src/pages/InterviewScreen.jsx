@@ -695,8 +695,8 @@ export default function InterviewScreen() {
   const [interviewState, setInterviewState] =
     useState(INTERVIEW_STATES.AI_ASKING)
 
-  const [remainingSeconds, setRemainingSeconds] =
-    useState(600)
+ const [remainingSeconds, setRemainingSeconds] =
+  useState(1800)
 
   const [muted, setMuted] = useState(false)
   const [speakerOn, setSpeakerOn] = useState(true)
@@ -737,10 +737,18 @@ export default function InterviewScreen() {
 
     setLoadError('')
 
-    startInterview({
-      resumeId:
-        configuration.selectedResume.id ?? null,
-    })
+    const durationMinutes = Number.parseInt(
+  configuration.duration,
+  10
+)
+
+startInterview({
+  resumeId: configuration.selectedResume.id ?? null,
+  targetRole: configuration.targetRole,
+  experienceLevel: configuration.experienceLevel,
+  difficulty: configuration.difficulty,
+  durationMinutes: durationMinutes || 30,
+})
       .then((data) => {
         if (!active) return
 
@@ -761,13 +769,18 @@ export default function InterviewScreen() {
             'Selected Resume',
 
           targetRole:
-            configuration.targetRole ||
-            'Software Developer',
+  configuration.targetRole || 'Software Developer',
 
-          totalQuestions: 5,
+experienceLevel:
+  configuration.experienceLevel || 'Beginner',
 
-          currentQuestion: 1,
+difficulty:
+  configuration.difficulty || 'Medium',
 
+durationMinutes:
+  durationMinutes || 30,
+
+totalQuestions: 5,
           stages: [
             'Introduction',
             'Technical',
@@ -797,7 +810,7 @@ export default function InterviewScreen() {
           },
         ])
 
-        setRemainingSeconds(600)
+        setRemainingSeconds((durationMinutes || 30) * 60)
 
         setInterviewState(
           INTERVIEW_STATES.AI_ASKING

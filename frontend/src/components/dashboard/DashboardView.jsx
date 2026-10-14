@@ -68,16 +68,80 @@ function DashboardView({ dashboardData }) {
   )
 
   function navigateSection(section) {
-    if (section === 'settings') {
-      setDialog({ title: 'Settings', message: copy.settingsUnavailable })
-      setActiveSection(section)
-      setMobileSidebarOpen(false)
+  setMobileSidebarOpen(false)
+
+  switch (section) {
+    case 'resume':
+      navigate('/my-resume')
       return
-    }
-    setActiveSection(section)
-    setMobileSidebarOpen(false)
-    document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+    case 'history':
+      navigate('/my-interviews')
+      return
+
+    case 'practice':
+      if (!configuration.selectedResume) {
+        setConfigurationError(
+          'Please upload a resume first to start your interview.'
+        )
+
+        document.getElementById('resume')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        })
+
+        return
+      }
+
+      document.getElementById('practice')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+      return
+
+    case 'dashboard':
+      setActiveSection('dashboard')
+      document.getElementById('dashboard')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+      return
+
+    case 'performance':
+      setActiveSection('performance')
+      document.getElementById('performance')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+      return
+
+    case 'settings':
+      setDialog({
+        title: 'Settings',
+        message: copy.settingsUnavailable,
+      })
+      setActiveSection('settings')
+      return
+
+    case 'reports':
+      navigate('/my-interviews')
+      return
+
+    case 'skills':
+      setDialog({
+        title: 'Interview Skills',
+        message: 'Interview skills resources will be available soon.',
+      })
+      return
+
+    default:
+      setActiveSection(section)
+      document.getElementById(section)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
   }
+}
 
   async function handleResumeSelection(event) {
   const file = event.currentTarget.files?.[0]

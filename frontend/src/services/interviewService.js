@@ -36,21 +36,29 @@ async function apiRequest(url, options = {}) {
 /**
  * Start a real AI interview.
  */
-export async function startInterview({ resumeId = null } = {}) {
-  const params = new URLSearchParams()
-
-  if (resumeId) {
-    params.set('resume_id', resumeId)
-  }
-
-  const query = params.toString()
-
-  return apiRequest(
-    `/interview/start${query ? `?${query}` : ''}`,
-    {
-      method: 'POST',
-    }
-  )
+/**
+ * Start an AI interview with the selected configuration.
+ */
+export async function startInterview({
+  resumeId = null,
+  targetRole = 'Software Developer',
+  experienceLevel = 'Beginner',
+  difficulty = 'Medium',
+  durationMinutes = 30,
+} = {}) {
+  return apiRequest('/interview/start', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      resume_id: resumeId,
+      target_role: targetRole,
+      experience_level: experienceLevel,
+      difficulty,
+      duration_minutes: durationMinutes,
+    }),
+  })
 }
 
 /**

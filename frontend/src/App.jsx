@@ -5,6 +5,8 @@ import Dashboard from './pages/Dashboard.jsx'
 import InterviewScreen from './pages/InterviewScreen.jsx'
 import InterviewReport from './pages/InterviewReport.jsx'
 import useAuth from './auth/useAuth.js'
+import MyResume from './pages/MyResume.jsx';
+import MyInterviews from './pages/MyInterviews.jsx';
 
 const DASHBOARD_PREVIEW_ENABLED = import.meta.env.DEV
 
@@ -38,7 +40,10 @@ function App() {
       <Route path="/dashboard" element={<DashboardRoute />} />
       <Route path="/interview" element={<InterviewRoute />} />
       <Route path="/interview/report" element={<InterviewReportRoute />} />
+      <Route path="/my-resume" element={<MyResume />} />
+<Route path="/my-interviews" element={<MyInterviews />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
+
     </Routes>
   )
 }

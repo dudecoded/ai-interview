@@ -34,7 +34,9 @@ export default function Dashboard() {
       <main className="dashboard-load-state" role="alert">
         <h1>Dashboard data couldn’t be loaded</h1>
         <p>{error.message || 'Please try again.'}</p>
-        <button type="button" onClick={reloadDashboard}>Retry</button>
+        <button type="button" onClick={reloadDashboard}>
+          Retry
+        </button>
       </main>
     )
   }
