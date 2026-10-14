@@ -10,19 +10,23 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="InterviewAI API",
     description="Backend API for the InterviewAI platform",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-   allow_origins=[
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:5174",
-   "https://ai-interview-uzz2.vercel.app",
-    "https://ai-interview-psi-self.vercel.app"
-],
+    allow_origins=[
+        # Local development
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+
+        # Deployed frontend URLs
+        "https://ai-interview-git-frontend-uzz2.vercel.app",
+        "https://ai-interview-uzz2.vercel.app",
+        "https://ai-interview-psi-self.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
